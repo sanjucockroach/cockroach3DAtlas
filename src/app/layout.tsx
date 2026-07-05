@@ -14,24 +14,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Z.ai Code Scaffold - AI-Powered Development",
-  description: "Modern Next.js scaffold optimized for AI-powered development with Z.ai. Built with TypeScript, Tailwind CSS, and shadcn/ui.",
-  keywords: ["Z.ai", "Next.js", "TypeScript", "Tailwind CSS", "shadcn/ui", "AI development", "React"],
-  authors: [{ name: "Z.ai Team" }],
-  icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
-  },
+  title: "CockroachIAS — UPSC World Atlas | Explore the Unexplored",
+  description:
+    "A live 3D world map for UPSC aspirants — NASA EONET events, places in news, biodiversity hotspots, Ramsar sites, UNESCO heritage, straits, rivers and more, each tied to the syllabus. For those who refuse to quit.",
+  keywords: [
+    "UPSC", "World Atlas", "CockroachIAS", "NASA EONET", "Geography",
+    "International Relations", "Ramsar sites", "UNESCO", "Prelims", "Mains",
+  ],
+  authors: [{ name: "CockroachIAS Companion Institute" }],
   openGraph: {
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
-    url: "https://chat.z.ai",
-    siteName: "Z.ai",
+    title: "CockroachIAS — UPSC World Atlas",
+    description: "Explore the Unexplored. A live 3D geopolitical & ecological intelligence globe for UPSC.",
+    siteName: "CockroachIAS",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
+    title: "CockroachIAS — UPSC World Atlas",
+    description: "Explore the Unexplored — a live 3D globe for UPSC aspirants.",
   },
 };
 
