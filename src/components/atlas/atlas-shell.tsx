@@ -13,7 +13,8 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import dynamic from 'next/dynamic'
-import { SlidersHorizontal, X, Globe2, Radio } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { SlidersHorizontal, X, Globe2, Radio, ChevronRight, Sliders } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { useAtlasStore } from '@/store/atlas'
 import { getCuratedHotspots } from '@/lib/atlas/curated'
@@ -57,6 +58,7 @@ function AtlasInner() {
   const select = useAtlasStore((s) => s.select)
 
   const [mobileFilters, setMobileFilters] = useState(false)
+  const [desktopFilters, setDesktopFilters] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -189,12 +191,45 @@ function AtlasInner() {
         {/* globe fills the whole main area */}
         <WorldGlobe hotspots={visibleHotspots} loading={eonetLoading && eonetHotspots.length === 0} />
 
-        {/* desktop floating filter panel */}
-        <div className="pointer-events-none absolute left-4 top-4 bottom-4 z-20 hidden w-[260px] lg:block">
-          <div className="pointer-events-auto h-full overflow-hidden border border-[#e0e0e0] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
-            <FilterPanel hotspots={allHotspots} />
-          </div>
-        </div>
+        {/* desktop floating filter toggle tab (always visible, left edge) */}
+        <button
+          type="button"
+          onClick={() => setDesktopFilters((v) => !v)}
+          className="absolute left-0 top-1/2 z-20 hidden -translate-y-1/2 items-center gap-1.5 rounded-r-sm border border-l-0 border-[#e0e0e0] bg-white px-2.5 py-3 text-black shadow-[4px_4px_16px_rgba(0,0,0,0.06)] transition-colors hover:bg-black hover:text-white lg:flex"
+          aria-label={desktopFilters ? 'Close filters' : 'Open filters'}
+        >
+          {desktopFilters ? (
+            <X className="h-4 w-4" />
+          ) : (
+            <>
+              <Sliders className="h-4 w-4 text-[#d32f2f]" />
+              <span
+                className="text-[10px] font-bold uppercase tracking-[0.2em]"
+                style={{ writingMode: 'vertical-rl' }}
+              >
+                Layers & Filters
+              </span>
+            </>
+          )}
+        </button>
+
+        {/* desktop floating filter panel (collapsible — opens on click) */}
+        <AnimatePresence>
+          {desktopFilters && (
+            <motion.div
+              key="desktop-filters"
+              initial={{ x: -280, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -280, opacity: 0 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute left-12 top-4 bottom-4 z-20 hidden w-[260px] lg:block"
+            >
+              <div className="pointer-events-auto h-full overflow-hidden border border-[#e0e0e0] bg-white shadow-[0_8px_30px_rgba(0,0,0,0.10)]">
+                <FilterPanel hotspots={allHotspots} onClose={() => setDesktopFilters(false)} />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* desktop floating detail sidebar */}
         {selected && !isMobile && (
@@ -227,9 +262,9 @@ function AtlasInner() {
           </SheetContent>
         </Sheet>
 
-        {/* empty-state hint when nothing selected (desktop) */}
+        {/* empty-state hint when nothing selected */}
         {!selected && (
-          <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-sm bg-black/85 px-3 py-1.5 text-[10.5px] uppercase tracking-[0.18em] text-white lg:left-auto lg:right-4 lg:translate-x-0">
+          <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-sm bg-black/85 px-3 py-1.5 text-[10.5px] uppercase tracking-[0.18em] text-white">
             Click any marker to explore · drag to rotate · scroll to zoom
           </div>
         )}

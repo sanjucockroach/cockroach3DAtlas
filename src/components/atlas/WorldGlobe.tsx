@@ -7,8 +7,10 @@
  *   - Background: pure white
  *   - World map (land): pure black
  *   - Country boundaries: white hairlines (demarcation)
+ *   - India states overlay: black land + brand-red state borders (UPSC detail)
  *   - Markings: red / blue / green (by layer family)
- *   - Live EONET events: pulsing red rings
+ *   - Live EONET events: pulsing rings
+ *   - Default view: India (lat 22, lng 80), globe ~30% larger than v1
  *
  * Uses react-globe.gl (three.js). WebGL — browser only (ssr:false via dynamic import).
  */
@@ -28,6 +30,7 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [size, setSize] = useState({ w: 800, h: 600 })
   const [countries, setCountries] = useState<any[] | null>(null)
+  const [indiaStates, setIndiaStates] = useState<any[] | null>(null)
 
   const selectedId = useAtlasStore((s) => s.selectedId)
   const select = useAtlasStore((s) => s.select)
@@ -46,42 +49,66 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
     return () => ro.disconnect()
   }, [])
 
-  // load country boundaries (local, no external dependency at runtime)
+  // load country boundaries + India states (local, no external dependency)
   useEffect(() => {
     fetch('/geo/countries.geojson')
       .then((r) => r.json())
       .then((d) => setCountries(d.features ?? []))
       .catch(() => setCountries([]))
+    fetch('/geo/india-states.geojson')
+      .then((r) => r.json())
+      .then((d) =>
+        setIndiaStates(
+          (d.features ?? []).map((f: any) => ({
+            ...f,
+            properties: { ...f.properties, _isIndia: true },
+          }))
+        )
+      )
+      .catch(() => setIndiaStates([]))
   }, [])
 
-  // init camera + controls + material
+  // merged polygons: countries + India states (India states rendered on top)
+  const polygons = useMemo(() => {
+    if (!countries) return null
+    return [...countries, ...(indiaStates ?? [])]
+  }, [countries, indiaStates])
+
+  const ready = !!polygons && size.w > 0
+
+  // white globe material (ocean = page white) — passed as a prop
+  const globeMaterial = useMemo(
+    () =>
+      new THREE.MeshPhongMaterial({
+        color: new THREE.Color('#ffffff'),
+        shininess: 6,
+        specular: new THREE.Color('#eeeeee'),
+      }),
+    []
+  )
+
+  // init camera + controls — runs AFTER the Globe mounts (depends on `ready`)
   useEffect(() => {
     const g = globeEl.current
-    if (!g) return
-    // white sphere so ocean merges with the white page
-    const mat = new THREE.MeshPhongMaterial({
-      color: new THREE.Color('#ffffff'),
-      shininess: 6,
-      specular: new THREE.Color('#eeeeee'),
-    })
-    g.globeMaterial(mat)
-    g.pointOfView({ lat: 22, lng: 80, altitude: 2.4 }, 0) // start over India
+    if (!g || !ready) return
+    // default view: India, globe ~30% larger than v1 (altitude 2.4 -> 1.8)
+    g.pointOfView({ lat: 22, lng: 80, altitude: 1.8 }, 0)
     const controls = g.controls() as any
     if (controls) {
       controls.autoRotate = true
       controls.autoRotateSpeed = 0.35
       controls.enableZoom = true
-      controls.minDistance = 180
+      controls.minDistance = 130
       controls.maxDistance = 600
       controls.enableDamping = true
       controls.dampingFactor = 0.12
     }
-  }, [])
+  }, [ready])
 
   // stop auto-rotate once the user interacts
   useEffect(() => {
     const g = globeEl.current
-    if (!g) return
+    if (!g || !ready) return
     const controls = g.controls() as any
     if (!controls) return
     const stop = () => {
@@ -94,14 +121,14 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
       el.removeEventListener('pointerdown', stop)
       el.removeEventListener('wheel', stop)
     }
-  }, [])
+  }, [ready])
 
   // fly-to
   useEffect(() => {
     const g = globeEl.current
     if (!g || !flyTo) return
     g.pointOfView(
-      { lat: flyTo.lat, lng: flyTo.lng, altitude: flyTo.alt ?? 1.2 },
+      { lat: flyTo.lat, lng: flyTo.lng, altitude: flyTo.alt ?? 1.0 },
       1200
     )
     const t = setTimeout(clearFlyTo, 1300)
@@ -153,8 +180,17 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
       </div>`
   }
 
+  // polygon stroke: India states get brand-red borders, all countries get white
+  const polygonStroke = (d: any) => {
+    const f = d as any
+    if (f?.properties?._isIndia) {
+      return 'rgba(211,47,47,0.65)' // brand red — India state borders
+    }
+    return 'rgba(255,255,255,0.85)' // white — country borders
+  }
+
   return (
-    <div ref={containerRef} className="relative h-full w-full bg-white">
+    <div ref={containerRef} className="absolute inset-0 bg-white">
       {loading && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/80">
           <div className="text-center">
@@ -166,18 +202,19 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
         </div>
       )}
 
-      {countries && size.w > 0 && (
+      {ready && (
         <Globe
           ref={globeEl as any}
           width={size.w}
           height={size.h}
           backgroundColor="#ffffff"
           showAtmosphere={false}
-          // country polygons: black land, white borders
-          polygonsData={countries ?? []}
+          globeMaterial={globeMaterial as any}
+          // polygons: countries (white borders) + India states (red borders)
+          polygonsData={polygons ?? []}
           polygonCapColor={() => 'rgba(0,0,0,0.96)'}
           polygonSideColor={() => 'rgba(0,0,0,0.96)'}
-          polygonStrokeColor={() => 'rgba(255,255,255,0.85)'}
+          polygonStrokeColor={polygonStroke}
           polygonsTransitionDuration={300}
           // hotspot points
           pointsData={pointsData}

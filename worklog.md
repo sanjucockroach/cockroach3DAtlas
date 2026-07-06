@@ -99,3 +99,29 @@ Stage Summary:
 - Sticky footer with CockroachIAS mantras.
 - Deferred to post-v1 review (Tier 2/3): PYQ connector UI, mains hooks, hotspot-of-the-day as a dedicated panel, region deep-dive, quiz mode, comparison mode, LLM explain, daily news auto-ingest. (PYQ dataset to be supplied by CTO later; curated data structure is ready to extend.)
 - Files: see src/components/atlas/*, src/lib/atlas/*, src/store/atlas.ts, src/data/atlas/hotspots.ts, src/app/api/atlas/eonet/route.ts, public/geo/countries.geojson.
+
+---
+Task ID: 6-updates
+Agent: Z.ai Code (orchestrator)
+Task: CTO requested 3 updates — (1) integrate uploaded India states GeoJSON, (2) make Filters/Layers panel open-on-click + scrollable + remove legend, (3) globe 30% bigger + default India view (was showing Africa).
+
+Work Log:
+- Inspected upload/in.json — 36 India state/UT features (MultiPolygon, name property). Copied to public/geo/india-states.geojson.
+- WorldGlobe.tsx: added indiaStates fetch + merged into polygonsData; India states get brand-red stroke (rgba(211,47,47,0.65)) while countries keep white stroke → India shows detailed state demarcation in brand red on black land.
+- Fixed critical bug: init useEffect had [] deps but ran before Globe mounted (Globe renders only when `countries` loaded) → pointOfView never applied → default Africa view. Changed deps to [ready] so camera init runs AFTER mount. Default view now India (lat 22, lng 80).
+- Fixed react-globe.gl v2.38 API: `globeMaterial` is a prop (Material), not a method. Moved from `g.globeMaterial(mat)` call to `globeMaterial={globeMaterial}` prop via useMemo.
+- Fixed globe size: container was `relative h-full w-full` → percentage-height fallback made canvas only 320px tall (globe looked small). Changed to `absolute inset-0` → canvas now 1440x800 (full main area). Combined with altitude 2.4→1.8, globe is now ~30%+ bigger and fills the screen.
+- FilterPanel.tsx: removed the Legend section (per CTO "remove the list of all places, not necessary"); added a compact single-row color key instead. Made entire content scrollable (ci-scroll flex-1 overflow-y-auto) with sticky header. Added onClose prop (X button).
+- atlas-shell.tsx: desktop filter panel now COLLAPSED by default; added a floating vertical "Layers & Filters" tab on the left edge that toggles it open (framer-motion slide-in). Mobile Sheet behavior unchanged.
+- Lint clean. Headless-browser verified:
+  * Default view = India (not Africa), globe large/filling screen, red state-border lines within India, red/blue/green markers visible around India & Asia.
+  * Filter panel hidden by default; clicking the left tab slides it open with all 10 layers + counts, scrollable to Syllabus Lens + Live Status, legend removed, X closes it.
+  * Fly-to + detail sidebar still work (tested Hotspot of the Day: South China Sea → L3, coords 10.00°/114.00°, full description, GS2/IR/Maritime Security/Quad tags, Wikipedia + PCA sources).
+  * Mobile (390x844): globe full-screen, Filters button + search in header, sticky footer, no overflow.
+  * Dev log clean, zero runtime errors.
+
+Stage Summary:
+- All 3 CTO updates shipped & browser-verified.
+- India now rendered with detailed state boundaries (uploaded in.json) in brand-red on the globe.
+- Filters/Layers panel is collapsed by default, opens on click via left-edge tab, fully scrollable, legend removed.
+- Globe is ~30%+ bigger (canvas 1440x800, altitude 1.8) and defaults to India.
