@@ -125,8 +125,8 @@ function AtlasInner() {
         <div className="flex items-center gap-3 px-4 py-2.5 lg:px-6">
           {/* brand */}
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center bg-black">
-              <Globe2 className="h-4.5 w-4.5 text-[#d32f2f]" strokeWidth={2.2} />
+            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-sm bg-black">
+              <img src="/cockroachlogo.jpeg" alt="CockroachIAS Logo" className="h-full w-full object-cover" />
             </div>
             <div className="leading-none">
               <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#d32f2f]">
@@ -281,7 +281,7 @@ function AtlasInner() {
             UPSC is a marathon. Walk slow, walk long.
           </p>
           <p className="text-[10px] uppercase tracking-[0.16em] text-[#999]">
-            © 2026 CockroachIAS · Built on the bedrock of Resilience
+            © 2026 CockroachIAS · Built on the bedrock of Resilience · <a href="/seo-atlas.html" className="underline hover:text-[#d32f2f] transition-colors">Atlas Directory</a>
           </p>
         </div>
       </footer>

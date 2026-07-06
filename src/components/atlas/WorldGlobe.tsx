@@ -25,6 +25,28 @@ interface Props {
   loading?: boolean
 }
 
+// Helper to cache geojson data locally in the browser's Cache Storage for instant loading
+async function fetchGeoJsonWithCache(url: string) {
+  if (typeof window !== 'undefined' && 'caches' in window) {
+    try {
+      const cache = await caches.open('cockroachias-geojson-cache')
+      const cachedResponse = await cache.match(url)
+      if (cachedResponse) {
+        return await cachedResponse.json()
+      }
+      const response = await fetch(url)
+      if (response.ok) {
+        await cache.put(url, response.clone())
+        return await response.json()
+      }
+    } catch (e) {
+      console.warn('[geojson-cache] Cache storage failed, falling back to network:', e)
+    }
+  }
+  const res = await fetch(url)
+  return await res.json()
+}
+
 export default function WorldGlobe({ hotspots, loading }: Props) {
   const globeEl = useRef<GlobeMethods | undefined>(undefined)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -49,14 +71,12 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
     return () => ro.disconnect()
   }, [])
 
-  // load country boundaries + India states (local, no external dependency)
+  // load country boundaries + India states (locally cached for fast loading on slow networks)
   useEffect(() => {
-    fetch('/geo/countries.geojson')
-      .then((r) => r.json())
+    fetchGeoJsonWithCache('/geo/countries.geojson')
       .then((d) => setCountries(d.features ?? []))
       .catch(() => setCountries([]))
-    fetch('/geo/india-states.geojson')
-      .then((r) => r.json())
+    fetchGeoJsonWithCache('/geo/india-states.geojson')
       .then((d) =>
         setIndiaStates(
           (d.features ?? []).map((f: any) => ({
