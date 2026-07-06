@@ -76,13 +76,14 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
 
   const ready = !!polygons && size.w > 0
 
-  // white globe material (ocean = page white) — passed as a prop
+  // light-blue globe material = ocean surface (immersive water tone).
+  // Land is drawn on top as black polygons; page chrome stays brand-white.
   const globeMaterial = useMemo(
     () =>
       new THREE.MeshPhongMaterial({
-        color: new THREE.Color('#ffffff'),
-        shininess: 6,
-        specular: new THREE.Color('#eeeeee'),
+        color: new THREE.Color('#a9d6e5'),
+        shininess: 14,
+        specular: new THREE.Color('#ffffff'),
       }),
     []
   )
