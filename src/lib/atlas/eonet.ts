@@ -42,6 +42,23 @@ function centroid(ring: number[][]): [number, number] {
   return [y / ring.length, x / ring.length] // [lat, lng]
 }
 
+/** Check if a coordinate is inside the US region boundaries (CONUS, Alaska, Hawaii) */
+function isInsideUS(lat: number, lng: number): boolean {
+  // Contiguous United States (CONUS)
+  if (lat >= 24.4 && lat <= 49.4 && lng >= -125.0 && lng <= -66.9) {
+    return true
+  }
+  // Alaska
+  if (lat >= 51.2 && lat <= 71.6 && lng >= -179.2 && lng <= -129.9) {
+    return true
+  }
+  // Hawaii
+  if (lat >= 18.9 && lat <= 28.5 && lng >= -178.4 && lng <= -154.8) {
+    return true
+  }
+  return false
+}
+
 function normalise(events: EonetEvent[]): AtlasHotspot[] {
   const out: AtlasHotspot[] = []
   for (const ev of events) {
@@ -62,6 +79,11 @@ function normalise(events: EonetEvent[]): AtlasHotspot[] {
       lng = ln
     }
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
+
+    // Stop live NASA events for only the US region
+    if (isInsideUS(lat, lng)) {
+      continue
+    }
 
     out.push({
       id: `eonet-${ev.id}`,
