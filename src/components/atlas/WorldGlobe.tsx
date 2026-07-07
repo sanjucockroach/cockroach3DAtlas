@@ -14,7 +14,7 @@
  *
  * Uses react-globe.gl (three.js). WebGL — browser only (ssr:false via dynamic import).
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback, startTransition } from 'react'
 import Globe, { type GlobeMethods } from 'react-globe.gl'
 import * as THREE from 'three'
 import { useAtlasStore, colorOf } from '@/store/atlas'
@@ -23,6 +23,50 @@ import type { AtlasHotspot } from '@/lib/atlas/types'
 interface Props {
   hotspots: AtlasHotspot[]
   loading?: boolean
+}
+
+function escapeHtml(s: string) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+// Static canvas properties to avoid recreation on re-renders
+const pointAltitude = (d: any) => {
+  const h = d as AtlasHotspot
+  if (h.source === 'eonet') return 0.025
+  return 0.015
+}
+
+const pointColor = (d: any) => colorOf(d as AtlasHotspot)
+
+const polygonStroke = (d: any) => {
+  const f = d as any
+  if (f?.properties?._isIndia) {
+    return 'rgba(211,47,47,0.65)' // brand red — India state borders
+  }
+  return 'rgba(255,255,255,0.85)' // white — country borders
+}
+
+const polygonCapColor = () => 'rgba(0,0,0,0.96)'
+const polygonSideColor = () => 'rgba(0,0,0,0.96)'
+
+const pointLabel = (d: any) => {
+  const h = d as AtlasHotspot
+  const tag = h.syllabusTags?.slice(0, 3).join(' · ') || ''
+  return `
+    <div style="background:#000;color:#fff;border-left:3px solid #d32f2f;
+                padding:8px 10px;font:12px/1.4 -apple-system,Segoe UI,Roboto,sans-serif;
+                max-width:240px;box-shadow:0 6px 20px rgba(0,0,0,.18);border-radius:2px;">
+      <div style="font-weight:700;letter-spacing:.3px;">${escapeHtml(h.title)}</div>
+      <div style="color:#9aa;margin-top:2px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;">
+        ${h.category} · ${h.source === 'eonet' ? 'LIVE · NASA EONET' : h.layer}
+      </div>
+      ${tag ? `<div style="color:#d32f2f;margin-top:4px;font-size:10px;">${escapeHtml(tag)}</div>` : ''}
+      <div style="color:#bbb;margin-top:4px;font-size:10px;">${h.lat.toFixed(2)}°, ${h.lng.toFixed(2)}°</div>
+    </div>`
 }
 
 // Helper to cache geojson data locally in the browser's Cache Storage for instant loading
@@ -126,7 +170,7 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
     }
   }, [ready])
 
-  // stop auto-rotate once the user interacts
+  // stop auto-rotate once the user interacts with passive events
   useEffect(() => {
     const g = globeEl.current
     if (!g || !ready) return
@@ -136,8 +180,8 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
       controls.autoRotate = false
     }
     const el = g.renderer().domElement as HTMLElement
-    el.addEventListener('pointerdown', stop, { once: true })
-    el.addEventListener('wheel', stop, { once: true })
+    el.addEventListener('pointerdown', stop, { once: true, passive: true })
+    el.addEventListener('wheel', stop, { once: true, passive: true })
     return () => {
       el.removeEventListener('pointerdown', stop)
       el.removeEventListener('wheel', stop)
@@ -172,43 +216,32 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
   // points
   const pointsData = useMemo(() => hotspots, [hotspots])
 
-  const pointAltitude = (d: any) => {
-    const h = d as AtlasHotspot
-    if (h.source === 'eonet') return 0.025
-    return 0.015
-  }
-  const pointRadius = (d: any) => {
-    const h = d as AtlasHotspot
-    if (h.id === selectedId) return 0.42
-    if (h.source === 'eonet') return 0.28
-    return 0.22
-  }
-  const pointColor = (d: any) => colorOf(d as AtlasHotspot)
+  // Memoize dynamic pointRadius to avoid re-rendering points unless selectedId changes
+  const getPointRadius = useCallback(
+    (d: any) => {
+      const h = d as AtlasHotspot
+      if (h.id === selectedId) return 0.42
+      if (h.source === 'eonet') return 0.28
+      return 0.22
+    },
+    [selectedId]
+  )
 
-  const pointLabel = (d: any) => {
-    const h = d as AtlasHotspot
-    const tag = h.syllabusTags?.slice(0, 3).join(' · ') || ''
-    return `
-      <div style="background:#000;color:#fff;border-left:3px solid #d32f2f;
-                  padding:8px 10px;font:12px/1.4 -apple-system,Segoe UI,Roboto,sans-serif;
-                  max-width:240px;box-shadow:0 6px 20px rgba(0,0,0,.18);border-radius:2px;">
-        <div style="font-weight:700;letter-spacing:.3px;">${escapeHtml(h.title)}</div>
-        <div style="color:#9aa;margin-top:2px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;">
-          ${h.category} · ${h.source === 'eonet' ? 'LIVE · NASA EONET' : h.layer}
-        </div>
-        ${tag ? `<div style="color:#d32f2f;margin-top:4px;font-size:10px;">${escapeHtml(tag)}</div>` : ''}
-        <div style="color:#bbb;margin-top:4px;font-size:10px;">${h.lat.toFixed(2)}°, ${h.lng.toFixed(2)}°</div>
-      </div>`
-  }
+  // Memoize event handlers to prevent recreating them on every render
+  const handlePointClick = useCallback(
+    (d: any) => {
+      startTransition(() => {
+        select((d as AtlasHotspot).id)
+      })
+    },
+    [select]
+  )
 
-  // polygon stroke: India states get brand-red borders, all countries get white
-  const polygonStroke = (d: any) => {
-    const f = d as any
-    if (f?.properties?._isIndia) {
-      return 'rgba(211,47,47,0.65)' // brand red — India state borders
-    }
-    return 'rgba(255,255,255,0.85)' // white — country borders
-  }
+  const handleGlobeClick = useCallback(() => {
+    startTransition(() => {
+      select(null)
+    })
+  }, [select])
 
   return (
     <div ref={containerRef} className="absolute inset-0 bg-white">
@@ -233,8 +266,8 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
           globeMaterial={globeMaterial as any}
           // polygons: countries (white borders) + India states (red borders)
           polygonsData={polygons ?? []}
-          polygonCapColor={() => 'rgba(0,0,0,0.96)'}
-          polygonSideColor={() => 'rgba(0,0,0,0.96)'}
+          polygonCapColor={polygonCapColor}
+          polygonSideColor={polygonSideColor}
           polygonStrokeColor={polygonStroke}
           polygonsTransitionDuration={300}
           // hotspot points
@@ -242,12 +275,10 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
           pointLat={(d: any) => (d as AtlasHotspot).lat}
           pointLng={(d: any) => (d as AtlasHotspot).lng}
           pointAltitude={pointAltitude}
-          pointRadius={pointRadius}
+          pointRadius={getPointRadius}
           pointColor={pointColor}
           pointLabel={pointLabel}
-          onPointClick={(d: any) => {
-            select((d as AtlasHotspot).id)
-          }}
+          onPointClick={handlePointClick}
           pointsTransitionDuration={400}
           // pulsing rings for live events
           ringsData={ringsData}
@@ -256,18 +287,10 @@ export default function WorldGlobe({ hotspots, loading }: Props) {
           ringPropagationSpeed={(d: any) => 2}
           ringRepeatPeriod={(d: any) => 1200}
           // click empty ocean -> deselect
-          onGlobeClick={() => select(null)}
+          onGlobeClick={handleGlobeClick}
         />
       )}
 
     </div>
   )
-}
-
-function escapeHtml(s: string) {
-  return String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }
