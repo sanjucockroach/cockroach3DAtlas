@@ -122,18 +122,21 @@ function AtlasInner() {
     <div className="flex min-h-screen flex-col bg-white text-black">
       {/* ===== Header ===== */}
       <header className="z-30 border-b border-[#e0e0e0] bg-white">
-        <div className="flex items-center gap-3 px-4 py-2.5 lg:px-6">
+        <div className="flex items-center gap-3 px-4 py-3.5 lg:px-6 lg:py-4">
           {/* brand */}
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-sm bg-black">
+          <div className="flex items-center gap-3">
+            <div className="flex h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-sm bg-black shrink-0">
               <img src="/cockroachlogo.jpeg" alt="CockroachIAS Logo" className="h-full w-full object-cover" />
             </div>
-            <div className="leading-none">
-              <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#d32f2f]">
+            <div className="flex flex-col justify-center">
+              <div className="text-[13px] font-bold uppercase tracking-[0.28em] text-[#d32f2f] leading-none">
                 CockroachIAS
               </div>
-              <div className="mt-0.5 text-[13px] font-bold uppercase tracking-[0.14em] text-black">
+              <div className="mt-1 text-[17px] font-bold uppercase tracking-[0.14em] text-black leading-none">
                 World Atlas
+              </div>
+              <div className="mt-1 text-[9px] font-semibold text-[#888] uppercase tracking-wider leading-none">
+                This World Atlas is indigenously made by COCKROACHIAS team
               </div>
             </div>
           </div>
@@ -275,7 +278,7 @@ function AtlasInner() {
         <div className="ci-rule" />
         <div className="flex flex-col items-center justify-between gap-1 px-4 py-2.5 text-center sm:flex-row sm:px-6 sm:text-left">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-black">
-            Your journey to the ultimate training ground.
+            For Those Who Refuse to QUIT.
           </p>
           <p className="text-[11px] italic text-[#666]">
             UPSC is a marathon. Walk slow, walk long.
