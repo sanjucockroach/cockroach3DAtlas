@@ -124,8 +124,8 @@ function AtlasInner() {
       <header className="z-30 border-b border-[#e0e0e0] bg-white">
         <div className="flex items-center gap-3 px-4 py-3.5 lg:px-6 lg:py-4">
           {/* brand */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-sm bg-black shrink-0">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-[55px] w-[55px] items-center justify-center overflow-hidden rounded-sm bg-black shrink-0">
               <img src="/cockroachlogo.jpeg" alt="CockroachIAS Logo" className="h-full w-full object-cover" />
             </div>
             <div className="flex flex-col justify-center">
@@ -135,13 +135,13 @@ function AtlasInner() {
               <div className="mt-1 text-[17px] font-bold uppercase tracking-[0.14em] text-black leading-none">
                 World Atlas
               </div>
-              <div className="mt-1 text-[9px] font-semibold text-[#888] uppercase tracking-wider leading-none">
+              <div className="mt-1.5 text-[9px] font-semibold text-[#888] uppercase tracking-wider leading-none">
                 This World Atlas is indigenously made by COCKROACHIAS team
               </div>
             </div>
           </div>
 
-          <div className="hidden h-8 w-px bg-[#e0e0e0] sm:block" />
+          <div className="hidden h-12 w-px bg-[#e0e0e0] sm:block" />
 
           {/* live ticker (desktop) */}
           <div className="hidden min-w-0 flex-1 items-center gap-2 lg:flex">
